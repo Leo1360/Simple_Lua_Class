@@ -3,41 +3,84 @@ Class = {}
 
 ---Creates a new class
 ---@return table New Class
-function Class:create(t)
-    if(t == nil)then
-        t = {}
+function Class:create(name,t)
+    if(type(name)~='string')then
+        t = name
+        name = nil
     end
-    setmetatable(t, getmetatable(self)) -- making the metatable inheritance
-    for key, value in pairs(self) do
-        t[key] = value
+    local obj = t
+    if(type(obj)~="table")then
+        obj = {}
     end
-    return t
+    setmetatable(obj, getmetatable(self)) -- making the metatable inheritance
+    if(name)then
+        addmetatable(obj,{__name = name})
+    end
+    for key, value in pairs(self) do -- copiando ponteiros para a nova instancia 
+        --vLog("DEBUG"," Class:create(): add key= ",key,"; value= ",value)
+        obj[key] = value
+    end
+    return obj
 end
 
 ---Extends a class
 ---@return table The mother class redy to be extended
-function Class:extends(t)
-    return self:create(t)
+function Class:extends(name,t)
+    if(type(name)~='string')then
+        t = name
+        name = nil
+    end
+    local obj = t
+    if(type(obj)~="table")then
+        obj = {}
+    end
+    local mtSuper = getmetatable(self)
+    mtSuper.__super:insert(mtSuper.__name)
+    mtSuper.__name = name
+    setmetatable(obj,mtSuper)
+    for key, value in pairs(self) do -- copiando ponteiros para a nova instancia 
+        --vLog("DEBUG"," Class:create(): add key= ",key,"; value= ",value)
+        obj[key] = value
+    end
+    return obj
 end
 
 ---Instaciate the class
----@return table A new instance of the class
-function Class:instanciate(t)
-    local t = self:create(t)
-    t.create = nil
-    t.instanciate = nil
-    t.extends = nil
-    t.new = nil
-    return t
+---@return table obj A new instance of the class
+function Class:instantiate()
+    local obj = self:create()
+    removemetatable(obj,"__super")
+    obj.create = nil
+    obj.instantiate = nil
+    obj.extends = nil
+    obj.new = nil
+
+    return obj
 end
 
 ---Standard constructor: Returns a instance of the class. Can be overwitten
 ---@return table A new instance of the class
 function Class:new() -- Contrutor padrão
-    return self:instanciate()
+    return self:instantiate()
     
 end
- 
+
+---Adiciona metatabela a classe
+---@param metaTable table
+function Class:setMeta(metaTable)
+    addmetatable(self,metaTable)
+end
+
+function Class:instanceOf(class)
+    local mtSelf = getmetatable(self)
+    local mtClass = getmetatable(class)
+    if(mtClass)then
+        return mtClass.__name == mtSelf.__name
+    end
+    return false
+end
+
+-----------Funções auxiliares-------------------
 ---Merges a metatable to the metatable of a given table/class
 ---@param class table
 ---@param newMeta table
@@ -50,5 +93,14 @@ function addmetatable(class,newMeta)
     else
         classMeta = newMeta
     end
+    setmetatable(class,classMeta)
+end
+
+---Removes a methaargument from a class's metatable
+---@param class any
+---@param meta any
+function removemetatable(class,meta)
+    local classMeta = getmetatable(class)
+    classMeta[meta] = nil
     setmetatable(class,classMeta)
 end

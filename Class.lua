@@ -1,59 +1,49 @@
 ---@class Standard class used to create other classes
 Class = {}
+setmetatable(Class,{__name = "Class",__isClass = true})
 
 ---Creates a new class
 ---@return table New Class
 function Class:create(name,t)
-    if(type(name)~='string')then
-        t = name
-        name = nil
+    if(self ~= Class)then
+    local err = debug.traceback("An object is not allowed to Create a class")
+        error(err)
+        return nil
     end
-    local obj = t
-    if(type(obj)~="table")then
-        obj = {}
-    end
-    setmetatable(obj, getmetatable(self)) -- making the metatable inheritance
-    if(name)then
-        addmetatable(obj,{__name = name})
-    end
-    for key, value in pairs(self) do -- copiando ponteiros para a nova instancia 
-        --vLog("DEBUG"," Class:create(): add key= ",key,"; value= ",value)
-        obj[key] = value
-    end
+    local obj = {}
+    obj.attributes = t
+    setmetatable(obj,{__name = name,__isClass = true,__index = Class})
+    --obj = table.clone(self,obj)
     return obj
 end
 
 ---Extends a class
 ---@return table The mother class redy to be extended
 function Class:extends(name,t)
-    if(type(name)~='string')then
-        t = name
-        name = nil
+    if(not getmetatable(self).__isClass)then
+        local err = debug.traceback("An object is not allowed to use a Class\\Prototype Method")
+            error(err)
+            return nil
     end
-    local obj = t
-    if(type(obj)~="table")then
-        obj = {}
-    end
-    local mtSuper = getmetatable(self)
-    mtSuper.__super = (mtSuper.__name)
-    mtSuper.__name = name
-    setmetatable(obj,mtSuper)
-    for key, value in pairs(self) do -- copiando ponteiros para a nova instancia 
-        --vLog("DEBUG"," Class:create(): add key= ",key,"; value= ",value)
-        obj[key] = value
-    end
+    local obj = {}
+    obj.attributes = t
+    obj.attributes = table.clone(self.attributes,obj.attributes)
+
+    setmetatable(obj,{__name = name,__isClass = true,__index = self})
     return obj
 end
 
 ---Instaciate the class
 ---@return table obj A new instance of the class
 function Class:instantiate()
-    local obj = self:create()
-    removemetatable(obj,"__super")
-    obj.create = nil
-    obj.instantiate = nil
-    obj.extends = nil
-    obj.new = nil
+    if(not getmetatable(self).__isClass)then
+        local err = debug.traceback("An object is not allowed to use a Class\\Prototype Method")
+            error(err)
+            return nil
+    end
+    local obj = table.clone(self.attributes)
+    local mt = {__index = self,__name = "Obj"..getmetatable(self).__name, __isClass = false}
+    setmetatable(obj,mt)
 
     return obj
 end
@@ -103,4 +93,15 @@ function removemetatable(class,meta)
     local classMeta = getmetatable(class)
     classMeta[meta] = nil
     setmetatable(class,classMeta)
+end
+
+function table.clone(tab,destine)
+    if(destine == nil)then
+        destine = {}
+    end
+
+    for key, value in pairs(tab) do
+        destine[key] = value
+    end
+    return destine
 end

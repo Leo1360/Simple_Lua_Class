@@ -35,7 +35,7 @@ function Class:extends(name,t)
         obj = {}
     end
     local mtSuper = getmetatable(self)
-    mtSuper.__super:insert(mtSuper.__name)
+    mtSuper.__super = (mtSuper.__name)
     mtSuper.__name = name
     setmetatable(obj,mtSuper)
     for key, value in pairs(self) do -- copiando ponteiros para a nova instancia 

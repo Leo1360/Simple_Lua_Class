@@ -1,4 +1,15 @@
----@class Standard class used to create other classes
+local function clone(tab,destine)
+    if(destine == nil)then
+        destine = {}
+    end
+
+    for key, value in pairs(tab) do
+        destine[key] = value
+    end
+    return destine
+end
+
+---@class Class Standard class used to create other classes
 Class = {}
 setmetatable(Class,{__name = "Class",__isClass = true})
 
@@ -13,7 +24,6 @@ function Class:create(name,t)
     local obj = {}
     obj.attributes = t
     setmetatable(obj,{__name = name,__isClass = true,__index = Class})
-    --obj = table.clone(self,obj)
     return obj
 end
 
@@ -27,7 +37,7 @@ function Class:extends(name,t)
     end
     local obj = {}
     obj.attributes = t
-    obj.attributes = table.clone(self.attributes,obj.attributes)
+    obj.attributes = clone(self.attributes,obj.attributes)
 
     setmetatable(obj,{__name = name,__isClass = true,__index = self})
     return obj
@@ -41,7 +51,7 @@ function Class:instantiate()
             error(err)
             return nil
     end
-    local obj = table.clone(self.attributes)
+    local obj = clone(self.attributes)
     local mt = {__index = self,__name = "Obj"..getmetatable(self).__name, __isClass = false}
     setmetatable(obj,mt)
 
@@ -61,13 +71,18 @@ function Class:setMeta(metaTable)
     addmetatable(self,metaTable)
 end
 
-function Class:instanceOf(class)
+---Verifica se um objeto é instancia de uma instancia de uma classe especifica
+---@param targetClass Class
+---@return boolean
+function Class:instanceOf(targetClass)
     local mtSelf = getmetatable(self)
-    local mtClass = getmetatable(class)
-    if(mtClass)then
-        return mtClass.__name == mtSelf.__name
+    if(self == Class)then
+        return false
     end
-    return false
+    if(mtSelf.__index == targetClass)then
+        return true
+    end
+    return mtSelf.__index:instanceOf(targetClass)
 end
 
 -----------Funções auxiliares-------------------
@@ -93,15 +108,4 @@ function removemetatable(class,meta)
     local classMeta = getmetatable(class)
     classMeta[meta] = nil
     setmetatable(class,classMeta)
-end
-
-function table.clone(tab,destine)
-    if(destine == nil)then
-        destine = {}
-    end
-
-    for key, value in pairs(tab) do
-        destine[key] = value
-    end
-    return destine
 end
